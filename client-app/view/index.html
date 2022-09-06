@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client App</title>
+</head>
+
+<body>
+    <h1>Client App</h1>
+    <p>This app can collect access token in 4 ways. choose a flow below</p>
+    <p>Following scopes will be sent</p>
+
+    <input type="checkbox" id="read-scope" checked>
+    <label for="vehicle1">read</label>
+    <input type="checkbox" id="write-scope" checked>
+    <label for="vehicle2">write</label>
+    <input type="checkbox" id="delete-scope" checked>
+    <label for="vehicle3">delete</label>
+    <table>
+        <tr>
+            <th>Flow</th>
+            <th>
+                Description
+            </th>
+            <th>
+                Action
+            </th>
+        </tr>
+        <tr>
+            <td>Authorization Code</td>
+            <td>
+                <ol>
+                    <li>First you will be redirected to the authorization server</li>
+                    <li>If you are not logged in already, you will be asked to login and then asked to give this app the
+                        permission to access your protected resources</li>
+                    <li>If you accept, you will be redirected back to this app with a code</li>
+                    <li>This app then will take that code, and behind the scene, go to the authorization server with the
+                        code asking for the access token</li>
+                    <li>If the authorization server recognizes the code, then it will give this app an access token</li>
+                    <li>So you will never see the token yourself, or anyone else who might be monitoring you maliciously
+                    </li>
+                </ol>
+            </td>
+            <td><button onclick="useAuthorizationCode()">Use</button></td>
+        </tr>
+        <tr>
+            <td>Implicit Grant</td>
+            <td>
+                <ol>
+                    <li>Same as in 'Authorization Code' flow, first you will be redirected to the authorization server
+                    </li>
+                    <li>If you are not logged in already, you will be asked to login and then asked to give this app the
+                        permission to access your protected resources</li>
+                    <li>If you accept, you will be redirected back to this app with the access token in the url</li>
+                    <li>This is less secure because anyone monitoring your network might be able to see the url and
+                        hence, also the access token</li>
+                </ol>
+            </td>
+            <td><button onclick="useImplicitGrant()">Use</button></td>
+        </tr>
+        <tr>
+            <td>Resource Owner Password Credentials</td>
+            <td>
+                <ol>
+                    <li>You will give this app your username and password</li>
+                    <li>The app will go to the authorization server with your username and password and get an access
+                        token if they match</li>
+                    <li>This is exactly what oauth2 is supposed to prevent - sharing your password with a third party
+                        app</li>
+                    <li>This is meant to be used by highly trusted apps</li>
+                    <li>Or if this app already has your password, and now want to migrate to using oauth2, they can use
+                        this flow to switch to using access tokens now</li>
+                    <li>In that case, the app is supposed to delete your password from it's database after collecting
+                        the token</li>
+                    <li>But can you really trust any third party app with this? Don't do it if any app wants to use this
+                        flow</li>
+                </ol>
+            </td>
+            <td>
+                <form>
+                    <input type="text" id='username' name="username" placeholder="username" />
+                    <input type="password" id='password' name="password" placeholder="password" />
+                </form>
+                <button onclick="useResourceOwnerPasswordCredentials()">Use</button>
+            </td>
+        </tr>
+        <tr>
+            <td>Client Credential</td>
+            <td>
+                <ol>
+                    <li>This flow will happen completely in the backend</li>
+                    <li>The authorization server knows what this app should be able to access</li>
+                    <li>It's access token has no user context. The token is for the CLIENT, not the USER</li>
+                </ol>
+            </td>
+            <td><button onclick="useClientCredential()">Use</button></td>
+        </tr>
+    </table>
+</body>
+<script>
+    function getScope() {
+        scopes = []
+        if (document.getElementById('read-scope').checked) scopes.push('read')
+        if (document.getElementById('write-scope').checked) scopes.push('write')
+        if (document.getElementById('delete-scope').checked) scopes.push('delete')
+        return scopes.join(" ")
+    }
+    function useAuthorizationCode() {
+        const scope = getScope()
+        if (!scope) {
+            alert('Please select at least one scope');
+            return;
+        }
+        fetch(`/authorization-code-flow?scope=${scope}`, {
+            redirect: 'follow',
+        })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            })
+            .catch((err) => {
+                const errorDisplay = document.getElementById("error");
+                errorDisplay.innerText = err;
+                document.getElementById('data').style.display = 'none'
+                errorDisplay.style.display = 'block'
+            })
+    }
+    function useImplicitGrant() {
+        const scope = getScope()
+        if (!scope) {
+            alert('Please select at least one scope');
+            return;
+        }
+        fetch(`/implicit-grant-flow?scope=${scope}`, {
+            redirect: 'follow',
+        })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            })
+            .catch((err) => {
+                const errorDisplay = document.getElementById("error");
+                errorDisplay.innerText = err;
+                document.getElementById('data').style.display = 'none'
+                errorDisplay.style.display = 'block'
+            })
+    }
+
+    function useResourceOwnerPasswordCredentials() {
+        const scope = getScope()
+        if (!scope) {
+            alert('Please select at least one scope');
+            return;
+        }
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        fetch('/resource-owner-password-credential-flow', {
+            method: 'POST',
+            body: JSON.stringify({username, password, scope}),
+            redirect: 'follow',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            })
+            .catch((err) => {
+                const errorDisplay = document.getElementById("error");
+                errorDisplay.innerText = err;
+                document.getElementById('data').style.display = 'none'
+                errorDisplay.style.display = 'block'
+            })
+    }
+
+    function useClientCredential() {
+        const scope = getScope()
+        if (!scope) {
+            alert('Please select at least one scope');
+            return;
+        }
+        fetch(`/client-credentials-flow?scope=${scope}`, {
+            redirect: 'follow',
+        })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            })
+            .catch((err) => {
+                const errorDisplay = document.getElementById("error");
+                errorDisplay.innerText = err;
+                document.getElementById('data').style.display = 'none'
+                errorDisplay.style.display = 'block'
+            })
+    }
+</script>
+
+</html>

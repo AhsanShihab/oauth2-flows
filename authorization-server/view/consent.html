@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Consent</title>
+</head>
+
+<body>
+    <div id="loading" style="display: block;">Loading ....</div>
+    <div id="error" style="display: none;"></div>
+    <div id="data" style="display: none;">
+        <h1><span id="appname"></span> is asking for the following permissions</h1>
+        <ul id="asked-permissions"></ul>
+        <button onclick="consent(true)">Allow</button>
+        <button onclick="consent(false)">Deny</button>
+    </div>
+</body>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const { response_type, client_id, redirect_uri, scope, state } = Object.fromEntries(urlParams.entries());
+
+    function consent(isAllowed) {
+        const data = {
+            isAllowed: isAllowed,
+            client_id,
+            redirect_uri,
+            scope,
+            state,
+            response_type
+        }
+
+        fetch('/oauth2/authorization/consent', {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            redirect: 'follow',
+            mode: 'cors',
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            }
+        })
+        .catch((err) => {
+            const errorDisplay = document.getElementById("error");
+            errorDisplay.innerText = err;
+            document.getElementById('data').style.display = 'none'
+            errorDisplay.style.display = 'block'
+        });
+    }
+
+    fetch(`/clients/${client_id}`)
+        .then(data => data.json())
+        .then(data => {
+            document.getElementById('appname').innerText = '"' + data.appName + '"';
+            const askingPermissionsList = document.getElementById('asked-permissions');
+            scope.split(' ').forEach(sc => {
+                switch (sc) {
+                    case 'read':
+                    askingPermissionsList.innerHTML += '<li>read all your resources</li>'
+                    return;
+                    case 'write':
+                    askingPermissionsList.innerHTML += '<li>write or update any of your resources</li>'
+                    return;
+                    case 'delete':
+                    askingPermissionsList.innerHTML += '<li>delete any of your resources</li>'
+                    return;
+                }
+            })
+        })
+        .then(() => {
+            document.getElementById('loading').style.display = 'none'
+            document.getElementById('data').style.display = 'block'
+        })
+        .catch(err => {
+            const errorDisplay = document.getElementById("error");
+            errorDisplay.innerText = err;
+            document.getElementById('loading').style.display = 'none'
+            errorDisplay.style.display = 'block'
+        });
+
+</script>
+
+</html>

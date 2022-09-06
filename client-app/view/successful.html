@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Success</title>
+</head>
+
+<body>
+    <h1>Success!</h1>
+    <p>
+        <a href="/">Go back to the flows list</a>
+    </p>
+    <br />
+    <div>
+        <button onclick="checkReadAccess()">Check READ access</button>
+        <div id="read-access-check-result"></div>
+    </div>
+    <br />
+    <div>
+        <input type='text' id='text' name='text' placeholder="write something ..." />
+        <button onclick="checkWriteAccess()">Check WRITE access</button>
+        <div id="write-access-check-result"></div>
+    </div>
+    <br />
+    <div>
+        <input type="'text" id="postid" name='postid' placeholder="post id" />
+        <button onclick="checkDeleteAccess()">Check DELETE access</button>
+        <div id="delete-access-check-result"></div>
+    </div>
+</body>
+<script>
+    function checkReadAccess() {
+        document.getElementById("read-access-check-result").innerText = 'checking ...'
+        fetch('/posts').then(res => res.json()).then(data => {
+            document.getElementById("read-access-check-result").innerText = 'sucess!'
+            data.forEach(post =>
+                document.getElementById("read-access-check-result").innerHTML += `
+                <div>
+                    <p>id: ${post.id}</p>
+                    <p>${post.text}</p>
+                    <p>${post.date}</p>
+                    <hr />
+                </div>`)
+        })
+            .catch(err => {
+                document.getElementById("read-access-check-result").innerText = 'failed!'
+            })
+    }
+
+    function checkWriteAccess() {
+        document.getElementById("write-access-check-result").innerText = 'checking ...'
+        fetch('/posts', {
+            method: 'POST',
+            body: JSON.stringify({ text: document.getElementById("text").value, date: Date() }),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        })
+            .then(res => {
+                if (res.status >= 400)
+                    throw new Error('failed')
+                return res.json()
+            })
+            .then(data => {
+                document.getElementById("write-access-check-result").innerText = 'sucess!'
+                document.getElementById("write-access-check-result").innerHTML += `
+                <div>
+                    <p>id: ${data.id}</p>
+                    <p>${data.text}</p>
+                    <p>${data.date}</p>
+                    <hr />
+                </div>`
+            })
+            .catch(err => {
+                document.getElementById("write-access-check-result").innerText = 'failed!'
+            })
+    }
+
+    function checkDeleteAccess() {
+        document.getElementById("delete-access-check-result").innerText = 'checking ...'
+        fetch(`/posts/${document.getElementById("postid").value}`, {
+            method: 'DELETE',
+        })
+            .then(res => {
+                if (res.status >= 400)
+                    throw new Error('failed')
+                return;
+            })
+            .then(() => {
+                document.getElementById("delete-access-check-result").innerText = 'sucess!'
+            })
+            .catch(err => {
+                document.getElementById("delete-access-check-result").innerText = 'failed!'
+            })
+    }
+</script>
+
+</html>

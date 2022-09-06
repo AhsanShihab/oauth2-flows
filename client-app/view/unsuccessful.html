@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error</title>
+</head>
+<body>
+    <div>
+        <h3>The authorization was not successful</h3>
+        <p>reason: <span id="error"></span></p>
+        <a href="/">Go back to the flows list</a>
+    </div>
+</body>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const { error } = Object.fromEntries(urlParams.entries());
+    document.getElementById('error').innerText = error
+</script>
+</html>
